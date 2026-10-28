@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PuntoSeguro - Marketplace Confiable con Pagos Protegidos</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col pb-16 md:pb-0">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-700 text-white sticky top-0 z-40 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="showSection('feed')">
+                <div class="bg-amber-400 text-indigo-950 p-2 rounded-xl font-black text-xl flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">PuntoSeguro</h1>
+                    <p class="text-xs text-indigo-200">Compra & Venta Local Protegida</p>
+                </div>
+            </div>
+
+            <!-- Navegación Desktop -->
+            <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+                <button onclick="showSection('feed')" class="hover:text-amber-300 transition flex items-center gap-1">
+                    <i data-lucide="store" class="w-4 h-4"></i> Catálogo
+                </button>
+                <button onclick="showSection('puntos')" class="hover:text-amber-300 transition flex items-center gap-1">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i> Puntos Seguros
+                </button>
+                <button onclick="showSection('custodia')" class="hover:text-amber-300 transition flex items-center gap-1">
+                    <i data-lucide="lock" class="w-4 h-4"></i> Custodia & Comisiones
+                </button>
+            </nav>
+
+            <button onclick="openPublishModal()" class="bg-amber-400 hover:bg-amber-300 text-indigo-950 px-4 py-2 rounded-xl font-bold text-sm transition flex items-center gap-2 shadow">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Publicar
+            </button>
+        </div>
+    </header>
+
+    <!-- Barra de Búsqueda y Filtros -->
+    <div class="bg-white border-b border-gray-200 py-3 px-4 sticky top-[60px] z-30 shadow-sm">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div class="relative w-full md:w-96">
+                <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Buscar productos verificados..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
+                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-3"></i>
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <span class="text-xs font-semibold text-gray-500 whitespace-nowrap">Distancia:</span>
+                <button onclick="setRadiusFilter(3)" id="btn-rad-3" class="px-3 py-1 bg-indigo-100 text-indigo-700 font-medium rounded-full text-xs whitespace-nowrap">A menos de 3 km</button>
+                <button onclick="setRadiusFilter(5)" id="btn-rad-5" class="px-3 py-1 bg-gray-100 text-gray-600 font-medium rounded-full text-xs whitespace-nowrap">A menos de 5 km</button>
+                <button onclick="setRadiusFilter(10)" id="btn-rad-10" class="px-3 py-1 bg-gray-100 text-gray-600 font-medium rounded-full text-xs whitespace-nowrap">A menos de 10 km</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
+
+        <!-- SECCIÓN 1: FEED DE PRODUCTOS -->
+        <section id="sec-feed" class="block">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-emerald-600"></i> Productos con Identidad Verificada
+                </h2>
+                <span id="product-count" class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-semibold">Cargando...</span>
+            </div>
+
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: PUNTOS SEGUROS -->
+        <section id="sec-puntos" class="hidden">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-1">Puntos de Entrega Seguros</h2>
+                <p class="text-sm text-gray-600">Comercios adheridos con monitoreo y verificación física de identidad para intercambiar sin riesgos.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="store" class="w-6 h-6"></i>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Verificado PuntoSeguro</span>
+                    <h3 class="font-bold text-gray-800 text-base mt-2">Estación YPF Central</h3>
+                    <p class="text-xs text-gray-500 mt-1">Av. San Martín & 18 de Julio</p>
+                    <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                        <p><strong>Horario:</strong> 24hs Abierto</p>
+                        <p><strong>Servicios:</strong> Cámaras de seguridad, Lockers, Personal presencial</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="building-2" class="w-6 h-6"></i>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Verificado PuntoSeguro</span>
+                    <h3 class="font-bold text-gray-800 text-base mt-2">Farmacia del Centro</h3>
+                    <p class="text-xs text-gray-500 mt-1">Calle Uruguay 1042</p>
+                    <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                        <p><strong>Horario:</strong> Lun a Sáb 08:00 - 20:00 hs</p>
+                        <p><strong>Servicios:</strong> Recepción de paquetes, Pago contra entrega</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="coffee" class="w-6 h-6"></i>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Verificado PuntoSeguro</span>
+                    <h3 class="font-bold text-gray-800 text-base mt-2">Café Martinez Express</h3>
+                    <p class="text-xs text-gray-500 mt-1">Plaza Principal Esquina Sur</p>
+                    <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                        <p><strong>Horario:</strong> Todos los días 07:00 - 22:00 hs</p>
+                        <p><strong>Servicios:</strong> Wi-Fi seguro, Zona de prueba de electrónicos</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: CUSTODIA Y COMISIONES -->
+        <section id="sec-custodia" class="hidden">
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-1">Pagos en Custodia & Transacciones</h2>
+                    <p class="text-sm text-gray-600">El dinero permanece protegido hasta la entrega. La app retiene automáticamente la comisión por servicio.</p>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-4 h-4 text-emerald-600"></i>
+                    <span>Comisión Plataforma: <strong>6% Vendedor</strong> | Protección: <strong>4% Comprador</strong></span>
+                </div>
+            </div>
+
+            <div id="custody-list" class="space-y-4">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal de Checkout / Procesamiento de Pago -->
+    <div id="modal-checkout" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeCheckoutModal()" class="absolute right-4 top-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 class="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+                <i data-lucide="credit-card" class="w-5 h-5 text-indigo-600"></i> Checkout Protegido
+            </h3>
+            <p class="text-xs text-gray-500 mb-4">Procesado mediante pasarela segura de pago con custodia.</p>
+
+            <div id="checkout-details" class="bg-gray-50 p-4 rounded-xl space-y-2 text-xs mb-4">
+                <!-- Se calcula dinámicamente -->
+            </div>
+
+            <button onclick="confirmPurchase()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2">
+                <i data-lucide="lock" class="w-4 h-4"></i> Pagar y Retener Fondos
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Publicación de Producto -->
+    <div id="modal-publish" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onclick="closePublishModal()" class="absolute right-4 top-4 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i> Publicar Nuevo Producto
+            </h3>
+
+            <form id="publishForm" onsubmit="handlePublish(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Título de la publicación</label>
+                    <input type="text" id="pub-title" required placeholder="Ej. Bicicleta de Montaña R29" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Precio ($)</label>
+                        <input type="number" id="pub-price" oninput="calculateSellerPayout()" required placeholder="Ej. 4500" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Distancia estimada (km)</label>
+                        <input type="number" id="pub-dist" min="1" max="50" value="2" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
+                    </div>
+                </div>
+
+                <!-- DESGLOSE EN TIEMPO REAL DE LA GANANCIA DEL VENDEDOR -->
+                <div id="seller-fee-box" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1">
+                    <div class="flex justify-between text-gray-600">
+                        <span>Precio fijado por ti:</span>
+                        <span id="fee-base" class="font-bold">$0</span>
+                    </div>
+                    <div class="flex justify-between text-amber-800">
+                        <span>Comisión PuntoSeguro (6%):</span>
+                        <span id="fee-cut" class="font-bold">-$0</span>
+                    </div>
+                    <div class="flex justify-between text-emerald-800 font-bold pt-1 border-t border-amber-200">
+                        <span>Recibirás en tu cuenta:</span>
+                        <span id="fee-net">$0</span>
+                    </div>
+                </div>
+
+                <!-- SUBIDA DIRECTA DE FOTO -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Imagen del Producto (Galería o Cámara)</label>
+                    <input type="file" id="pub-image-file" accept="image/*" onchange="previewSelectedImage(event)" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                    <div id="image-preview-container" class="mt-2 hidden">
+                        <p class="text-[10px] text-gray-400 mb-1">Vista previa:</p>
+                        <img id="image-preview" src="" alt="Vista previa" class="w-full h-32 object-cover rounded-xl border border-gray-200">
+                    </div>
+                </div>
+
+                <!-- REPUTACIÓN INICIAL DEL VENDEDOR -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Calificación de Vendedor</label>
+                    <div class="flex items-center gap-1" id="star-rating-picker">
+                        <button type="button" onclick="setRating(1)" class="star-btn text-amber-400"><i data-lucide="star" class="w-5 h-5 fill-amber-400"></i></button>
+                        <button type="button" onclick="setRating(2)" class="star-btn text-amber-400"><i data-lucide="star" class="w-5 h-5 fill-amber-400"></i></button>
+                        <button type="button" onclick="setRating(3)" class="star-btn text-amber-400"><i data-lucide="star" class="w-5 h-5 fill-amber-400"></i></button>
+                        <button type="button" onclick="setRating(4)" class="star-btn text-amber-400"><i data-lucide="star" class="w-5 h-5 fill-amber-400"></i></button>
+                        <button type="button" onclick="setRating(5)" class="star-btn text-amber-400"><i data-lucide="star" class="w-5 h-5 fill-amber-400"></i></button>
+                        <span id="rating-value" class="text-xs font-bold text-gray-600 ml-2">5.0 / 5</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Punto Seguro de Preferencia</label>
+                    <select id="pub-point" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
+                        <option value="Estación YPF Central">Estación YPF Central (Av. San Martín)</option>
+                        <option value="Farmacia del Centro">Farmacia del Centro (Calle Uruguay)</option>
+                        <option value="Café Martinez Express">Café Martinez Express (Plaza Sur)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Descripción del producto</label>
+                    <textarea id="pub-desc" rows="3" required placeholder="Detalla el estado real del artículo..." class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"></textarea>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-md">
+                        Publicar con Identidad Verificada
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Navegación Inferior Móvil -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-2 md:hidden z-40">
+        <button onclick="showSection('feed')" class="flex flex-col items-center text-indigo-600">
+            <i data-lucide="store" class="w-5 h-5"></i>
+            <span class="text-[10px] font-medium">Catálogo</span>
+        </button>
+        <button onclick="showSection('puntos')" class="flex flex-col items-center text-gray-500">
+            <i data-lucide="map-pin" class="w-5 h-5"></i>
+            <span class="text-[10px] font-medium">Puntos</span>
+        </button>
+        <button onclick="showSection('custodia')" class="flex flex-col items-center text-gray-500">
+            <i data-lucide="lock" class="w-5 h-5"></i>
+            <span class="text-[10px] font-medium">Custodia</span>
+        </button>
+    </div>
+
+    
