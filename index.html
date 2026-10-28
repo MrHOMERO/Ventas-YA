@@ -274,5 +274,385 @@
             <span class="text-[10px] font-medium">Custodia</span>
         </button>
     </div>
+<!-- SCRIPT PRINCIPAL CON LÓGICA INTERACTIVA -->
+    <script>
+        const COMMISSION_SELLER_RATE = 0.06; // 6% comisión al vendedor
+        const COMMISSION_BUYER_RATE = 0.04;  // 4% tarifa de protección al comprador
 
+        const initialProducts = [
+            {
+                id: 1,
+                title: "Guitarra Acústica Fender - Impecable",
+                price: 12500,
+                seller: "Carlos M.",
+                rating: 4.8,
+                verified: true,
+                distance: 1.8,
+                point: "Estación YPF Central",
+                image: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=600&q=80",
+                description: "Excelente sonido, bien calibrada. Incluye funda protectora acolchada."
+            },
+            {
+                id: 2,
+                title: "Reloj Cronógrafo Deportivo de Colección",
+                price: 8900,
+                seller: "Valeria R.",
+                rating: 5.0,
+                verified: true,
+                distance: 3.2,
+                point: "Café Martinez Express",
+                image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80",
+                description: "Resistente al agua, correa de cuero genuino. Casi sin uso."
+            },
+            {
+                id: 3,
+                title: "Consola PS4 Slim 1TB + 2 Mandos",
+                price: 18000,
+                seller: "Gonzalo F.",
+                rating: 4.6,
+                verified: true,
+                distance: 4.5,
+                point: "Farmacia del Centro",
+                image: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?auto=format&fit=crop&w=600&q=80",
+                description: "Mantenimiento al día, súper silenciosa. Se prueba antes de retirar."
+            }
+        ];
+
+        let products = [];
+        let custodyItems = [];
+        let activeRadius = 10;
+        let selectedRating = 5;
+        let currentUploadedImageBase64 = null;
+        let selectedProductForCheckout = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedProducts = localStorage.getItem("ps_products");
+            if (savedProducts) {
+                products = JSON.parse(savedProducts);
+            } else {
+                products = initialProducts;
+                localStorage.setItem("ps_products", JSON.stringify(products));
+            }
+
+            const savedCustody = localStorage.getItem("ps_custody");
+            if (savedCustody) {
+                custodyItems = JSON.parse(savedCustody);
+            }
+
+            renderProducts();
+            renderCustody();
+            lucide.createIcons();
+        });
+
+        function showSection(sec) {
+            document.getElementById("sec-feed").classList.add("hidden");
+            document.getElementById("sec-puntos").classList.add("hidden");
+            document.getElementById("sec-custodia").classList.add("hidden");
+
+            document.getElementById(`sec-${sec}`).classList.remove("hidden");
+        }
+
+        function renderStars(rating) {
+            let starsHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= Math.floor(rating)) {
+                    starsHTML += `<i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-400 inline"></i>`;
+                } else {
+                    starsHTML += `<i data-lucide="star" class="w-3.5 h-3.5 text-gray-300 inline"></i>`;
+                }
+            }
+            return starsHTML;
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById("product-grid");
+            grid.innerHTML = "";
+
+            const filtered = products.filter(p => p.distance <= activeRadius);
+            document.getElementById("product-count").textContent = `${filtered.length} disponibles`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">No se encontraron productos dentro de este rango.</div>`;
+                return;
+            }
+
+            filtered.forEach(p => {
+                const card = document.createElement("div");
+                card.className = "bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col";
+                card.innerHTML = `
+                    <div class="relative h-48 bg-gray-100">
+                        <img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover">
+                        <span class="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-3 h-3"></i> Identidad Verificada
+                        </span>
+                        <span class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full">
+                            📍 A ${p.distance} km
+                        </span>
+                    </div>
+
+                    <div class="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-indigo-600 font-bold">${p.point}</span>
+                                <div class="flex items-center gap-1">
+                                    ${renderStars(p.rating)}
+                                    <span class="text-[11px] font-bold text-gray-600">${p.rating}</span>
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-base line-clamp-1">${p.title}</h3>
+                            <p class="text-xs text-gray-500 mt-1 line-clamp-2">${p.description}</p>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-gray-400 block">Precio Producto</span>
+                                <span class="text-lg font-black text-gray-900">$ ${p.price.toLocaleString()}</span>
+                            </div>
+                            <button onclick="openCheckoutModal(${p.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition shadow flex items-center gap-1">
+                                <i data-lucide="lock" class="w-3.5 h-3.5"></i> Comprar Seguro
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        function calculateSellerPayout() {
+            const val = parseFloat(document.getElementById("pub-price").value) || 0;
+            const feeBox = document.getElementById("seller-fee-box");
+
+            if (val > 0) {
+                const feeCut = val * COMMISSION_SELLER_RATE;
+                const net = val - feeCut;
+
+                document.getElementById("fee-base").textContent = `$ ${val.toLocaleString()}`;
+                document.getElementById("fee-cut").textContent = `-$ ${feeCut.toLocaleString()}`;
+                document.getElementById("fee-net").textContent = `$ ${net.toLocaleString()}`;
+                feeBox.classList.remove("hidden");
+            } else {
+                feeBox.classList.add("hidden");
+            }
+        }
+
+        function openCheckoutModal(id) {
+            selectedProductForCheckout = products.find(p => p.id === id);
+            if (!selectedProductForCheckout) return;
+
+            const p = selectedProductForCheckout;
+            const buyerFee = p.price * COMMISSION_BUYER_RATE;
+            const totalPrice = p.price + buyerFee;
+
+            const container = document.getElementById("checkout-details");
+            container.innerHTML = `
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Precio del producto:</span>
+                    <span class="font-semibold">$ ${p.price.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between text-indigo-700">
+                    <span>Garantía de Custodia (4%):</span>
+                    <span class="font-semibold">+$ ${buyerFee.toLocaleString()}</span>
+                </div>
+                <div class="border-t border-gray-200 pt-2 flex justify-between text-sm font-bold text-gray-900">
+                    <span>Total a abonar:</span>
+                    <span class="text-emerald-700">$ ${totalPrice.toLocaleString()}</span>
+                </div>
+            `;
+
+            document.getElementById("modal-checkout").classList.remove("hidden");
+            lucide.createIcons();
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById("modal-checkout").classList.add("hidden");
+            selectedProductForCheckout = null;
+        }
+
+        function confirmPurchase() {
+            if (!selectedProductForCheckout) return;
+            const prod = selectedProductForCheckout;
+
+            const buyerFee = prod.price * COMMISSION_BUYER_RATE;
+            const sellerFee = prod.price * COMMISSION_SELLER_RATE;
+            const totalPaid = prod.price + buyerFee;
+            const netSellerPayout = prod.price - sellerFee;
+            const totalPlatformRevenue = buyerFee + sellerFee;
+
+            const newItem = {
+                custodyId: Date.now(),
+                product: prod,
+                totalPaid: totalPaid,
+                netSellerPayout: netSellerPayout,
+                platformRevenue: totalPlatformRevenue,
+                status: "RETIENEN_FONDOS",
+                date: new Date().toLocaleDateString()
+            };
+
+            custodyItems.unshift(newItem);
+            localStorage.setItem("ps_custody", JSON.stringify(custodyItems));
+
+            closeCheckoutModal();
+            showSection("custodia");
+            renderCustody();
+        }
+
+        function renderCustody() {
+            const container = document.getElementById("custody-list");
+            container.innerHTML = "";
+
+            if (custodyItems.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-400">No tienes operaciones activas en custodia.</div>`;
+                return;
+            }
+
+            custodyItems.forEach(item => {
+                const box = document.createElement("div");
+                box.className = "bg-white p-5 rounded-2xl border border-gray-200 shadow-sm";
+
+                let statusBadge = '';
+                let actionBtn = '';
+
+                if (item.status === "RETIENEN_FONDOS") {
+                    statusBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold">Fondos Retenidos en Custodia</span>`;
+                    actionBtn = `<button onclick="advanceCustody(${item.custodyId}, 'EN_TRANSITO')" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Simular Entrega en ${item.product.point}</button>`;
+                } else if (item.status === "EN_TRANSITO") {
+                    statusBadge = `<span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold">En Punto Seguro</span>`;
+                    actionBtn = `<button onclick="advanceCustody(${item.custodyId}, 'CONFIRMADO')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Inspeccionar & Liquidar Venta</button>`;
+                } else {
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold">Venta Finalizada</span>`;
+                    actionBtn = `<span class="text-xs text-gray-400 font-medium">Transferencia completada al vendedor</span>`;
+                }
+
+                box.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
+                        <div class="flex items-center gap-3">
+                            <img src="${item.product.image}" class="w-12 h-12 rounded-xl object-cover">
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-sm">${item.product.title}</h4>
+                                <p class="text-xs text-gray-500">Punto Seguro: ${item.product.point}</p>
+                            </div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+
+                    <!-- Desglose Financiero -->
+                    <div class="bg-gray-50 p-3 rounded-xl text-xs grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                        <div>
+                            <span class="text-gray-400 block">Total Pagado por Comprador:</span>
+                            <strong class="text-gray-800">$ ${item.totalPaid.toLocaleString()}</strong>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block">Comisión Plataforma Retenida:</span>
+                            <strong class="text-indigo-600">$ ${item.platformRevenue.toLocaleString()}</strong>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block">Pago Neto a Liberar al Vendedor:</span>
+                            <strong class="text-emerald-600">$ ${item.netSellerPayout.toLocaleString()}</strong>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1">
+                        <span class="text-xs text-gray-400">Fecha: ${item.date}</span>
+                        ${actionBtn}
+                    </div>
+                `;
+                container.appendChild(box);
+            });
+
+            lucide.createIcons();
+        }
+
+        function advanceCustody(id, newStatus) {
+            const idx = custodyItems.findIndex(c => c.custodyId === id);
+            if (idx !== -1) {
+                custodyItems[idx].status = newStatus;
+                localStorage.setItem("ps_custody", JSON.stringify(custodyItems));
+                renderCustody();
+            }
+        }
+
+        function previewSelectedImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentUploadedImageBase64 = e.target.result;
+                    document.getElementById("image-preview").src = currentUploadedImageBase64;
+                    document.getElementById("image-preview-container").classList.remove("hidden");
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function setRating(val) {
+            selectedRating = val;
+            document.getElementById("rating-value").textContent = `${val}.0 / 5`;
+            const buttons = document.querySelectorAll("#star-rating-picker button");
+            buttons.forEach((btn, idx) => {
+                if (idx < val) {
+                    btn.innerHTML = `<i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>`;
+                } else {
+                    btn.innerHTML = `<i data-lucide="star" class="w-5 h-5 text-gray-300"></i>`;
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function setRadiusFilter(rad) {
+            activeRadius = rad;
+            [3, 5, 10].forEach(r => {
+                const btn = document.getElementById(`btn-rad-${r}`);
+                btn.className = (r === rad) 
+                    ? "px-3 py-1 bg-indigo-100 text-indigo-700 font-medium rounded-full text-xs whitespace-nowrap"
+                    : "px-3 py-1 bg-gray-100 text-gray-600 font-medium rounded-full text-xs whitespace-nowrap";
+            });
+            renderProducts();
+        }
+
+        function handlePublish(e) {
+            e.preventDefault();
+
+            const title = document.getElementById("pub-title").value;
+            const price = parseFloat(document.getElementById("pub-price").value);
+            const dist = parseFloat(document.getElementById("pub-dist").value);
+            const point = document.getElementById("pub-point").value;
+            const desc = document.getElementById("pub-desc").value;
+            const image = currentUploadedImageBase64 || "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80";
+
+            const newProduct = {
+                id: Date.now(),
+                title: title,
+                price: price,
+                seller: "Usuario Verificado",
+                rating: selectedRating,
+                verified: true,
+                distance: dist,
+                point: point,
+                image: image,
+                description: desc
+            };
+
+            products.unshift(newProduct);
+            localStorage.setItem("ps_products", JSON.stringify(products));
+
+            closePublishModal();
+            renderProducts();
+            alert("¡Producto publicado con éxito e identidad verificada!");
+        }
+
+        function openPublishModal() {
+            document.getElementById("modal-publish").classList.remove("hidden");
+        }
+        function closePublishModal() {
+            document.getElementById("modal-publish").classList.add("hidden");
+            document.getElementById("publishForm").reset();
+            document.getElementById("image-preview-container").classList.add("hidden");
+            document.getElementById("seller-fee-box").classList.add("hidden");
+            currentUploadedImageBase64 = null;
+        }
+    </script>
+</body>
+</html>
     
